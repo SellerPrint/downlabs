@@ -74,10 +74,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Downlabs — Android apps catalog" },
       { name: "description", content: "Discover and download Android apps. Continuously aggregated." },
-      { property: "og:title", content: "Downlabs" },
-      { property: "og:description", content: "Discover and download Android apps." },
+      { property: "og:title", content: "Downlabs — Android apps catalog" },
+      { property: "og:description", content: "Discover and download Android apps. Continuously aggregated." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Downlabs — Android apps catalog" },
+      { name: "twitter:description", content: "Discover and download Android apps. Continuously aggregated." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/e1d646d5-9ce3-40fe-99b3-aa11cf6f2008" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/e1d646d5-9ce3-40fe-99b3-aa11cf6f2008" },
     ],
     links: [
       {
