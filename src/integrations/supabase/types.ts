@@ -14,7 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      apps: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          download_url: string | null
+          downloads_count: string | null
+          icon_url: string | null
+          id: string
+          last_scraped_at: string | null
+          name: string
+          platform: string | null
+          publisher: string | null
+          rating: number | null
+          screenshots: Json | null
+          size: string | null
+          slug: string
+          updated_at: string
+          uptodown_url: string
+          version: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          download_url?: string | null
+          downloads_count?: string | null
+          icon_url?: string | null
+          id?: string
+          last_scraped_at?: string | null
+          name: string
+          platform?: string | null
+          publisher?: string | null
+          rating?: number | null
+          screenshots?: Json | null
+          size?: string | null
+          slug: string
+          updated_at?: string
+          uptodown_url: string
+          version?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          download_url?: string | null
+          downloads_count?: string | null
+          icon_url?: string | null
+          id?: string
+          last_scraped_at?: string | null
+          name?: string
+          platform?: string | null
+          publisher?: string | null
+          rating?: number | null
+          screenshots?: Json | null
+          size?: string | null
+          slug?: string
+          updated_at?: string
+          uptodown_url?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
+      scrape_jobs: {
+        Row: {
+          apps_found: number | null
+          apps_inserted: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          source_url: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          apps_found?: number | null
+          apps_inserted?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          source_url: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          apps_found?: number | null
+          apps_inserted?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          source_url?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
