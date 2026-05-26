@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppsSlugRouteImport } from './routes/apps.$slug'
 import { Route as ApiPublicScrapeRouteImport } from './routes/api/public/scrape'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppsSlugRoute = AppsSlugRouteImport.update({
+  id: '/apps/$slug',
+  path: '/apps/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicScrapeRoute = ApiPublicScrapeRouteImport.update({
@@ -25,27 +31,31 @@ const ApiPublicScrapeRoute = ApiPublicScrapeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/apps/$slug': typeof AppsSlugRoute
   '/api/public/scrape': typeof ApiPublicScrapeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/apps/$slug': typeof AppsSlugRoute
   '/api/public/scrape': typeof ApiPublicScrapeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/apps/$slug': typeof AppsSlugRoute
   '/api/public/scrape': typeof ApiPublicScrapeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/public/scrape'
+  fullPaths: '/' | '/apps/$slug' | '/api/public/scrape'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/public/scrape'
-  id: '__root__' | '/' | '/api/public/scrape'
+  to: '/' | '/apps/$slug' | '/api/public/scrape'
+  id: '__root__' | '/' | '/apps/$slug' | '/api/public/scrape'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppsSlugRoute: typeof AppsSlugRoute
   ApiPublicScrapeRoute: typeof ApiPublicScrapeRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/apps/$slug': {
+      id: '/apps/$slug'
+      path: '/apps/$slug'
+      fullPath: '/apps/$slug'
+      preLoaderRoute: typeof AppsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/scrape': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppsSlugRoute: AppsSlugRoute,
   ApiPublicScrapeRoute: ApiPublicScrapeRoute,
 }
 export const routeTree = rootRouteImport
