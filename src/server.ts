@@ -77,4 +77,15 @@ export default {
       return brandedErrorResponse();
     }
   },
+  // Cloudflare Workers cron trigger — portable continuous scraping.
+  // Schedule is defined in wrangler.jsonc. Runs wherever the worker is deployed
+  // (Lovable, your own Cloudflare account, etc.) — no Supabase pg_cron needed.
+  async scheduled(
+    _event: unknown,
+    _env: unknown,
+    ctx: { waitUntil: (p: Promise<unknown>) => void },
+  ) {
+    const { runScrape } = await import("./lib/scraper.server");
+    ctx.waitUntil(runScrape().catch((e) => console.error("[scheduled scrape]", e)));
+  },
 };
