@@ -117,9 +117,8 @@ function Home() {
           <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center">
             <h3 className="text-lg font-semibold">No apps yet</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              The scraper hasn't run yet. Trigger it to populate the catalog.
+              The background scraper runs hourly. Apps will appear here shortly after the first sync.
             </p>
-            <TriggerScrapeButton />
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -133,35 +132,6 @@ function Home() {
       <footer className="mt-16 border-t border-border py-8 text-center text-xs text-muted-foreground">
         <p>Downlabs · Data aggregated from public sources · For demo purposes only.</p>
       </footer>
-    </div>
-  );
-}
-
-function TriggerScrapeButton() {
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-  return (
-    <div className="mt-6">
-      <button
-        disabled={loading}
-        onClick={async () => {
-          setLoading(true);
-          setMsg(null);
-          try {
-            const res = await fetch("/api/public/scrape", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-            const j = await res.json();
-            setMsg(j.ok ? `Done. Inserted ${j.inserted} apps.` : `Error: ${j.error}`);
-          } catch (e) {
-            setMsg(e instanceof Error ? e.message : "Failed");
-          } finally {
-            setLoading(false);
-          }
-        }}
-        className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-[var(--shadow-glow)] transition-opacity hover:opacity-90 disabled:opacity-60"
-      >
-        {loading ? "Scraping..." : "Run scraper now"}
-      </button>
-      {msg && <p className="mt-3 text-sm text-muted-foreground">{msg}</p>}
     </div>
   );
 }
