@@ -2,10 +2,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Play, RefreshCw, ShieldAlert, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Play, RefreshCw, ShieldAlert, CheckCircle2, XCircle, Clock, Upload, Plus } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { supabase } from "@/integrations/supabase/client";
-import { checkIsAdmin, listScrapeJobs, triggerScrape } from "@/lib/admin.functions";
+import { checkIsAdmin, listScrapeJobs, triggerScrape, createApp } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — Downlabs" }] }),
