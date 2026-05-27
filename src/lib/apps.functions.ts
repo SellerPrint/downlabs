@@ -1,21 +1,43 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
+export type SortKey = "recent" | "top" | "downloads";
+
 export const listApps = createServerFn({ method: "GET" })
-  .inputValidator((data: { category?: string; search?: string; limit?: number } | undefined) => data ?? {})
+  .inputValidator((data: {
+    category?: string;
+    search?: string;
+    minRating?: number;
+    version?: string;
+    sort?: SortKey;
+    page?: number;
+    pageSize?: number;
+  } | undefined) => data ?? {})
   .handler(async ({ data }) => {
+    const page = Math.max(1, data.page ?? 1);
+    const pageSize = Math.min(60, Math.max(1, data.pageSize ?? 24));
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
     let q = supabaseAdmin
       .from("apps")
-      .select("id, slug, name, publisher, category, icon_url, rating, downloads_count, version")
-      .order("last_scraped_at", { ascending: false })
-      .limit(data.limit ?? 60);
+      .select("id, slug, name, publisher, category, icon_url, rating, downloads_count, version", { count: "exact" });
 
     if (data.category) q = q.eq("category", data.category);
     if (data.search) q = q.ilike("name", `%${data.search}%`);
+    if (typeof data.minRating === "number" && data.minRating > 0) q = q.gte("rating", data.minRating);
+    if (data.version) q = q.ilike("version", `%${data.version}%`);
 
-    const { data: apps, error } = await q;
-    if (error) return { apps: [], error: error.message };
-    return { apps: apps ?? [], error: null };
+    const sort: SortKey = data.sort ?? "recent";
+    if (sort === "top") q = q.order("rating", { ascending: false, nullsFirst: false });
+    else if (sort === "downloads") q = q.order("downloads_count", { ascending: false, nullsFirst: false });
+    else q = q.order("last_scraped_at", { ascending: false });
+
+    q = q.range(from, to);
+
+    const { data: apps, error, count } = await q;
+    if (error) return { apps: [], total: 0, page, pageSize, error: error.message };
+    return { apps: apps ?? [], total: count ?? 0, page, pageSize, error: null };
   });
 
 export const getApp = createServerFn({ method: "GET" })

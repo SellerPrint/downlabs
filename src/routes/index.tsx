@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Search, Sparkles } from "lucide-react";
+import { Search, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { AppCard } from "@/components/AppCard";
-import { listApps, listCategories, getStats } from "@/lib/apps.functions";
+import { listApps, listCategories, getStats, type SortKey } from "@/lib/apps.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -19,6 +19,8 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
+const PAGE_SIZE = 24;
+
 function Home() {
   const fetchApps = useServerFn(listApps);
   const fetchCats = useServerFn(listCategories);
@@ -26,22 +28,41 @@ function Home() {
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string | null>(null);
+  const [minRating, setMinRating] = useState(0);
+  const [version, setVersion] = useState("");
+  const [sort, setSort] = useState<SortKey>("recent");
+  const [page, setPage] = useState(1);
+
+  const resetPage = () => setPage(1);
 
   const appsQ = useQuery({
-    queryKey: ["apps", category, search],
-    queryFn: () => fetchApps({ data: { category: category ?? undefined, search: search || undefined } }),
+    queryKey: ["apps", category, search, minRating, version, sort, page],
+    queryFn: () =>
+      fetchApps({
+        data: {
+          category: category ?? undefined,
+          search: search || undefined,
+          minRating: minRating || undefined,
+          version: version || undefined,
+          sort,
+          page,
+          pageSize: PAGE_SIZE,
+        },
+      }),
+    placeholderData: keepPreviousData,
   });
   const catsQ = useQuery({ queryKey: ["cats"], queryFn: () => fetchCats() });
   const statsQ = useQuery({ queryKey: ["stats"], queryFn: () => fetchStats(), refetchInterval: 30000 });
 
   const apps = appsQ.data?.apps ?? [];
+  const total = appsQ.data?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const cats = catsQ.data?.categories ?? [];
   const empty = !appsQ.isLoading && apps.length === 0;
 
   const lastSync = useMemo(() => {
     const j = statsQ.data?.lastJob;
-    if (!j) return null;
-    return new Date(j.started_at).toLocaleString();
+    return j ? new Date(j.started_at).toLocaleString() : null;
   }, [statsQ.data]);
 
   return (
@@ -69,7 +90,7 @@ function Home() {
               <Search className="ml-2 size-5 text-muted-foreground" />
               <input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => { setSearch(e.target.value); resetPage(); }}
                 placeholder="Search apps..."
                 className="h-10 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
@@ -80,32 +101,52 @@ function Home() {
 
       <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
         {cats.length > 0 && (
-          <div className="mb-8 flex flex-wrap gap-2">
-            <button
-              onClick={() => setCategory(null)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                category === null
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              All
-            </button>
+          <div className="mb-4 flex flex-wrap gap-2">
+            <FilterChip active={category === null} onClick={() => { setCategory(null); resetPage(); }}>All</FilterChip>
             {cats.map((c) => (
-              <button
-                key={c}
-                onClick={() => setCategory(c)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
-                  category === c
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-card text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {c}
-              </button>
+              <FilterChip key={c} active={category === c} onClick={() => { setCategory(c); resetPage(); }}>
+                <span className="capitalize">{c}</span>
+              </FilterChip>
             ))}
           </div>
         )}
+
+        <div className="mb-8 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-3">
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            Min rating
+            <select
+              value={minRating}
+              onChange={(e) => { setMinRating(Number(e.target.value)); resetPage(); }}
+              className="h-8 rounded-md border border-border bg-background px-2 text-xs"
+            >
+              <option value={0}>Any</option>
+              <option value={3}>3★+</option>
+              <option value={4}>4★+</option>
+              <option value={4.5}>4.5★+</option>
+            </select>
+          </label>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            Version
+            <input
+              value={version}
+              onChange={(e) => { setVersion(e.target.value); resetPage(); }}
+              placeholder="e.g. 2.1"
+              className="h-8 w-24 rounded-md border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+            />
+          </label>
+          <label className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+            Sort
+            <select
+              value={sort}
+              onChange={(e) => { setSort(e.target.value as SortKey); resetPage(); }}
+              className="h-8 rounded-md border border-border bg-background px-2 text-xs"
+            >
+              <option value="recent">Most recent</option>
+              <option value="top">Top rated</option>
+              <option value="downloads">Most downloaded</option>
+            </select>
+          </label>
+        </div>
 
         {appsQ.isLoading ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -115,17 +156,41 @@ function Home() {
           </div>
         ) : empty ? (
           <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center">
-            <h3 className="text-lg font-semibold">No apps yet</h3>
+            <h3 className="text-lg font-semibold">No apps match your filters</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              The background scraper runs hourly. Apps will appear here shortly after the first sync.
+              Try clearing filters, or wait for the next background sync.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {apps.map((app) => (
-              <AppCard key={app.id} app={app} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {apps.map((app) => (
+                <AppCard key={app.id} app={app} />
+              ))}
+            </div>
+
+            <div className="mt-8 flex items-center justify-between text-sm">
+              <p className="text-muted-foreground">
+                Page {page} of {pageCount} · {total} apps
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="inline-flex h-9 items-center gap-1 rounded-lg border border-border bg-card px-3 text-xs hover:bg-accent disabled:opacity-40"
+                >
+                  <ChevronLeft className="size-4" /> Prev
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                  disabled={page >= pageCount}
+                  className="inline-flex h-9 items-center gap-1 rounded-lg border border-border bg-card px-3 text-xs hover:bg-accent disabled:opacity-40"
+                >
+                  Next <ChevronRight className="size-4" />
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </main>
 
@@ -133,5 +198,20 @@ function Home() {
         <p>Downlabs · Data aggregated from public sources · For demo purposes only.</p>
       </footer>
     </div>
+  );
+}
+
+function FilterChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+        active
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border bg-card text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
