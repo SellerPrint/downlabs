@@ -106,6 +106,11 @@ function AdminPage() {
         </pre>
       )}
 
+      <AddAppCard onCreated={() => { qc.invalidateQueries({ queryKey: ["apps"] }); qc.invalidateQueries({ queryKey: ["stats"] }); }} />
+
+      <h2 className="mb-3 mt-10 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Scrape history</h2>
+
+
       <div className="overflow-hidden rounded-2xl border border-border bg-card">
         <table className="w-full text-sm">
           <thead className="border-b border-border bg-muted/30 text-left text-xs uppercase text-muted-foreground">
