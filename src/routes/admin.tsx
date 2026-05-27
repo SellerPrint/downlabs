@@ -169,3 +169,116 @@ function PageShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+function AddAppCard({ onCreated }: { onCreated: () => void }) {
+  const createAppFn = useServerFn(createApp);
+  const [form, setForm] = useState({
+    name: "", slug: "", uptodown_url: "", publisher: "", category: "",
+    version: "", description: "", tags: "", icon_url: "", download_url: "",
+  });
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [apkFile, setApkFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  async function uploadFile(file: File, folder: string, slug: string) {
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
+    const path = `${folder}/${slug}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("app-files").upload(path, file, {
+      cacheControl: "3600", upsert: false, contentType: file.type || undefined,
+    });
+    if (error) throw new Error(error.message);
+    const { data } = supabase.storage.from("app-files").getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true); setMsg(null);
+    try {
+      const slug = form.slug.trim().toLowerCase();
+      let icon_url = form.icon_url.trim() || null;
+      let download_url = form.download_url.trim() || null;
+      if (iconFile) icon_url = await uploadFile(iconFile, "icons", slug);
+      if (apkFile) download_url = await uploadFile(apkFile, "apks", slug);
+
+      const tags = form.tags.split(",").map((t) => t.trim()).filter(Boolean);
+      const payload = {
+        name: form.name.trim(),
+        slug,
+        uptodown_url: form.uptodown_url.trim(),
+        publisher: form.publisher.trim() || null,
+        category: form.category.trim() || null,
+        version: form.version.trim() || null,
+        description: form.description.trim() || null,
+        icon_url, download_url, tags,
+      };
+      const res = await createAppFn({ data: payload });
+      setMsg(`✓ App "${res.app?.name}" enregistrée`);
+      setForm({ name: "", slug: "", uptodown_url: "", publisher: "", category: "", version: "", description: "", tags: "", icon_url: "", download_url: "" });
+      setIconFile(null); setApkFile(null);
+      onCreated();
+    } catch (err) {
+      setMsg(`✗ ${err instanceof Error ? err.message : "Échec"}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-6">
+      <h2 className="flex items-center gap-2 text-lg font-semibold">
+        <Plus className="size-5" /> Ajouter une app manuellement
+      </h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Uploade l'icône et le fichier APK, ou colle simplement des URLs.
+      </p>
+      <form onSubmit={onSubmit} className="mt-5 grid gap-4 md:grid-cols-2">
+        <Field label="Nom *"><input required value={form.name} onChange={set("name")} className={inputCls} /></Field>
+        <Field label="Slug * (ex: whatsapp)"><input required value={form.slug} onChange={set("slug")} pattern="[a-z0-9][a-z0-9-]*" className={inputCls} /></Field>
+        <Field label="URL Uptodown *" className="md:col-span-2">
+          <input required type="url" value={form.uptodown_url} onChange={set("uptodown_url")} placeholder="https://...uptodown.com/android" className={inputCls} />
+        </Field>
+        <Field label="Éditeur"><input value={form.publisher} onChange={set("publisher")} className={inputCls} /></Field>
+        <Field label="Catégorie"><input value={form.category} onChange={set("category")} className={inputCls} /></Field>
+        <Field label="Version"><input value={form.version} onChange={set("version")} className={inputCls} /></Field>
+        <Field label="Tags (séparés par virgule)"><input value={form.tags} onChange={set("tags")} placeholder="messaging, free, communication" className={inputCls} /></Field>
+        <Field label="Description" className="md:col-span-2">
+          <textarea value={form.description} onChange={set("description")} rows={3} className={`${inputCls} resize-y`} />
+        </Field>
+
+        <Field label="Icône (fichier image)">
+          <input type="file" accept="image/*" onChange={(e) => setIconFile(e.target.files?.[0] ?? null)} className={fileCls} />
+        </Field>
+        <Field label="…ou URL d'icône"><input type="url" value={form.icon_url} onChange={set("icon_url")} className={inputCls} /></Field>
+
+        <Field label="APK / Fichier (upload)">
+          <input type="file" accept=".apk,.xapk,.zip,application/vnd.android.package-archive" onChange={(e) => setApkFile(e.target.files?.[0] ?? null)} className={fileCls} />
+        </Field>
+        <Field label="…ou URL de téléchargement"><input type="url" value={form.download_url} onChange={set("download_url")} className={inputCls} /></Field>
+
+        <div className="md:col-span-2 flex items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground" aria-live="polite">{msg}</p>
+          <button type="submit" disabled={busy} className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50">
+            <Upload className="size-4" /> {busy ? "Envoi…" : "Enregistrer l'app"}
+          </button>
+        </div>
+      </form>
+    </section>
+  );
+}
+
+const inputCls = "h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring";
+const fileCls = "block w-full text-sm text-muted-foreground file:mr-3 file:h-9 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:text-sm file:font-medium hover:file:bg-secondary/80";
+
+function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
+  return (
+    <label className={`flex flex-col gap-1.5 ${className}`}>
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      {children}
+    </label>
+  );
+}
