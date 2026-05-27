@@ -1,7 +1,28 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { runScrape } from "@/lib/scraper.server";
+
+const slugRe = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
+const tagRe = /^[a-zA-Z0-9 _-]+$/;
+
+const createAppSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  slug: z.string().trim().min(1).max(64).regex(slugRe, "slug invalide"),
+  uptodown_url: z.string().trim().url().max(500),
+  publisher: z.string().trim().max(200).nullish(),
+  category: z.string().trim().max(100).nullish(),
+  description: z.string().trim().max(5000).nullish(),
+  icon_url: z.string().trim().url().max(1000).nullish(),
+  download_url: z.string().trim().url().max(1000).nullish(),
+  version: z.string().trim().max(50).nullish(),
+  size: z.string().trim().max(50).nullish(),
+  platform: z.string().trim().max(20).nullish(),
+  rating: z.number().min(0).max(5).nullish(),
+  downloads_count: z.string().trim().max(50).nullish(),
+  tags: z.array(z.string().trim().min(1).max(40).regex(tagRe)).max(20).optional(),
+});
 
 async function assertAdmin(userId: string) {
   const { data, error } = await supabaseAdmin
