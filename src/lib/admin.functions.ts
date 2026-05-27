@@ -69,3 +69,33 @@ export const listScrapeJobs = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return { jobs: jobs ?? [] };
   });
+
+export const createApp = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => createAppSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const payload = {
+      ...data,
+      tags: data.tags ?? [],
+      platform: data.platform ?? "android",
+      last_scraped_at: new Date().toISOString(),
+    };
+    const { data: app, error } = await supabaseAdmin
+      .from("apps")
+      .upsert(payload, { onConflict: "slug" })
+      .select("id, slug, name")
+      .single();
+    if (error) throw new Error(error.message);
+    return { app };
+  });
+
+export const deleteApp = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin.from("apps").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
