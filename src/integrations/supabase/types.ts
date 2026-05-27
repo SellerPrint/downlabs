@@ -31,6 +31,7 @@ export type Database = {
           screenshots: Json | null
           size: string | null
           slug: string
+          tags: string[]
           updated_at: string
           uptodown_url: string
           version: string | null
@@ -51,6 +52,7 @@ export type Database = {
           screenshots?: Json | null
           size?: string | null
           slug: string
+          tags?: string[]
           updated_at?: string
           uptodown_url: string
           version?: string | null
@@ -71,6 +73,7 @@ export type Database = {
           screenshots?: Json | null
           size?: string | null
           slug?: string
+          tags?: string[]
           updated_at?: string
           uptodown_url?: string
           version?: string | null
